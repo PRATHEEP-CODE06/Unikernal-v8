@@ -1,0 +1,29 @@
+{
+  "name": "unikernal",
+  "version": "8.0.0",
+  "description": "Unikernal v8 – Universal Routing and Interoperability Kernel",
+  "main": "index.js",
+  "type": "commonjs",
+  "bin": {
+    "unikernal": "./bin/unikernal"
+  },
+  "scripts": {
+    "start": "node kernel/src/server.js",
+    "dev": "NODE_ENV=development node kernel/src/server.js",
+    "test": "node tests/suite.js",
+    "test:suite": "node tests/suite.js",
+    "test:kernel": "node tests/test_kernel.js",
+    "test:ai": "node tests/ai-pipeline.js",
+    "inspect": "node tools/cli/unikernal.js inspect"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "morgan": "^1.10.1",
+    "protobufjs": "^7.5.4",
+    "uuid": "^9.0.0",
+    "ws": "^8.18.3",
+    "js-yaml": "^4.1.1"
+  }
+}

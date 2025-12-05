@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unikernal v8 - Visual Workflow Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar - Node Palette */
+        .sidebar {
+            width: 280px;
+            background: #1a1f3a;
+            border-right: 2px solid #2d3561;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .node-palette {
+            display: grid;
+            gap: 10px;
+        }
+
+        .palette-node {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: move;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .palette-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .palette-node h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .palette-node p {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        /* Canvas */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #0f1429;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        /* Top Bar */
+        .toolbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 31, 58, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-bottom: 2px solid #2d3561;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .toolbar h1 {
+            font-size: 18px;
+            color: #00d4ff;
+            margin-right: auto;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        /* Properties Panel */
+        .properties {
+            position: absolute;
+            right: 20px;
+            top: 80px;
+            width: 300px;
+            background: rgba(26, 31, 58, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #2d3561;
+            display: none;
+        }
+
+        .properties.active {
+            display: block;
+        }
+
+        .properties h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            background: #0f1429;
+            border: 1px solid #2d3561;
+            border-radius: 4px;
+            color: white;
+            font-size: 13px;
+        }
+
+        /* Output Code Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1f3a;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: auto;
+            border: 2px solid #2d3561;
+        }
+
+        .modal-content h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+
+        .code-output {
+            background: #0f1429;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sidebar: Node Palette -->
+        <div class="sidebar">
+            <h2>📦 Components</h2>
+            <div class="node-palette">
+                <div class="palette-node" draggable="true" data-type="source">
+                    <h4>🔌 Source</h4>
+                    <p>Data input (REST API, DB, File)</p>
+                </div>
+                <div class="palette-node" draggable="true" data-type="transform">
+                    <h4>⚙️ Transform</h4>
+                    <p>Map, filter, aggregate</p>
+                </div>
+                <div class="palette-node" draggable="true" data-type="validate">
+                    <h4>✓ Validate</h4>
+                    <p>Schema validation</p>
+                </div>
+                <div class="palette-node" draggable="true" data-type="route">
+                    <h4>🔀 Route</h4>
+                    <p>Conditional routing</p>
+                </div>
+                <div class="palette-node" draggable="true" data-type="target">
+                    <h4>📤 Target</h4>
+                    <p>Data output (DB, API, Queue)</p>
+                </div>
+                <div class="palette-node" draggable="true" data-type="python">
+                    <h4>🐍 Python</h4>
+                    <p>Python adapter</p>
+                </div>
+                <div class="palette-node" draggable="true" data-type="java">
+                    <h4>☕ Java</h4>
+                    <p>Java adapter</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Canvas -->
+        <div class="canvas-container">
+            <div class="toolbar">
+                <h1>🎨 Unikernal v8 - Visual Workflow Builder</h1>
+                <button class="btn" onclick="clearCanvas()">Clear</button>
+                <button class="btn btn-success" onclick="generateCode()">Generate UDL</button>
+                <button class="btn" onclick="saveWorkflow()">Save</button>
+                <button class="btn btn-danger" onclick="deployWorkflow()">Deploy</button>
+            </div>
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="properties" id="properties">
+        <h3>Node Properties</h3>
+        <div class="form-group">
+            <label>Node ID</label>
+            <input type="text" id="prop-id" placeholder="e.g., source-api">
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <select id="prop-type">
+                <option>source</option>
+                <option>transform</option>
+                <option>validate</option>
+                <option>route</option>
+                <option>target</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Config (JSON)</label>
+            <input type="text" id="prop-config" placeholder='{"port": 8080}'>
+        </div>
+        <button class="btn" onclick="updateNode()">Update</button>
+    </div>
+
+    <!-- Code Output Modal -->
+    <div class="modal" id="codeModal">
+        <div class="modal-content">
+            <h2>Generated UDL v8</h2>
+            <div class="code-output" id="codeOutput"></div>
+            <button class="btn" onclick="closeModal()">Close</button>
+            <button class="btn btn-success" onclick="copyCode()">Copy</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Resize canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            redraw();
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Workflow state
+        const nodes = [];
+        const connections = [];
+        let selectedNode = null;
+        let draggedNode = null;
+
+        // Drag from palette
+        document.querySelectorAll('.palette-node').forEach(node => {
+            node.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('nodeType', e.target.dataset.type);
+            });
+        });
+
+        // Drop on canvas
+        canvas.addEventListener('dragover', (e) => e.preventDefault());
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('nodeType');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            addNode(type, x, y);
+        });
+
+        function addNode(type, x, y) {
+            const node = {
+                id: `${type}-${nodes.length + 1}`,
+                type,
+                x, y,
+                width: 120,
+                height: 60,
+                config: {}
+            };
+            nodes.push(node);
+            redraw();
+        }
+
+        // Canvas interaction
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            for (const node of nodes) {
+                if (x >= node.x && x <= node.x + node.width &&
+                    y >= node.y && y <= node.y + node.height) {
+                    selectedNode = node;
+                    draggedNode = node;
+                    showProperties(node);
+                    return;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (draggedNode) {
+                const rect = canvas.getBoundingClientRect();
+                draggedNode.x = e.clientX - rect.left - draggedNode.width / 2;
+                draggedNode.y = e.clientY - rect.top - draggedNode.height / 2;
+                redraw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            draggedNode = null;
+        });
+
+        function redraw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw connections
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 2;
+            connections.forEach(conn => {
+                const from = nodes.find(n => n.id === conn.from);
+                const to = nodes.find(n => n.id === conn.to);
+                if (from && to) {
+                    ctx.beginPath();
+                    ctx.moveTo(from.x + from.width / 2, from.y + from.height / 2);
+                    ctx.lineTo(to.x + to.width / 2, to.y + to.height / 2);
+                    ctx.stroke();
+                }
+            });
+
+            // Draw nodes
+            nodes.forEach(node => {
+                const gradient = ctx.createLinearGradient(node.x, node.y, node.x + node.width, node.y + node.height);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(node.x, node.y, node.width, node.height);
+
+                ctx.fillStyle = 'white';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(node.type, node.x + node.width / 2, node.y + node.height / 2 + 5);
+            });
+        }
+
+        function showProperties(node) {
+            document.getElementById('properties').classList.add('active');
+            document.getElementById('prop-id').value = node.id;
+            document.getElementById('prop-type').value = node.type;
+            document.getElementById('prop-config').value = JSON.stringify(node.config);
+        }
+
+        function updateNode() {
+            if (selectedNode) {
+                selectedNode.id = document.getElementById('prop-id').value;
+                selectedNode.type = document.getElementById('prop-type').value;
+                try {
+                    selectedNode.config = JSON.parse(document.getElementById('prop-config').value || '{}');
+                } catch (e) { }
+                redraw();
+            }
+        }
+
+        function generateCode() {
+            const udl = {
+                version: '8.0',
+                workflow: {
+                    name: 'visual-workflow',
+                    nodes: nodes.map(n => ({
+                        id: n.id,
+                        type: n.type,
+                        config: n.config
+                    })),
+                    connections: connections
+                }
+            };
+
+            document.getElementById('codeOutput').textContent = JSON.stringify(udl, null, 2);
+            document.getElementById('codeModal').classList.add('active');
+        }
+
+        function clearCanvas() {
+            nodes.length = 0;
+            connections.length = 0;
+            redraw();
+        }
+
+        function saveWorkflow() {
+            alert('Workflow saved locally!');
+        }
+
+        function deployWorkflow() {
+            alert('Deploying workflow to Unikernal v8 kernel...');
+        }
+
+        function closeModal() {
+            document.getElementById('codeModal').classList.remove('active');
+        }
+
+        function copyCode() {
+            const code = document.getElementById('codeOutput').textContent;
+            navigator.clipboard.writeText(code);
+            alert('Code copied to clipboard!');
+        }
+    </script>
+</body>
+
+</html>

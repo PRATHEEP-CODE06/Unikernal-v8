@@ -1,0 +1,9 @@
+{
+    "id": "test-adapter-v7",
+    "type": "node",
+    "entry": "adapter.js",
+    "language": "javascript",
+    "capabilities": [
+        "test"
+    ]
+}

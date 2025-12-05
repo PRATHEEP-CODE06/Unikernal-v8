@@ -1,0 +1,14 @@
+{
+    "name": "unikernal-adapter",
+    "version": "1.0.0",
+    "description": "Node.js Adapter for Unikernal",
+    "main": "index.js",
+    "scripts": {
+        "test-send": "node examples/sendExample.js"
+    },
+    "dependencies": {
+        "axios": "^1.4.0",
+        "ws": "^8.13.0",
+        "uuid": "^9.0.0"
+    }
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Unikernal v7 Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
+        .card { background: #333; padding: 15px; margin: 10px; border-radius: 8px; }
+        h1 { color: #00d4ff; }
+        .status { font-weight: bold; }
+        .ok { color: #0f0; }
+        .error { color: #f00; }
+    </style>
+</head>
+<body>
+    <h1>Unikernal v7 Dashboard</h1>
+    
+    <div class="card">
+        <h2>System Status</h2>
+        <div id="health">Loading...</div>
+    </div>
+
+    <div class="card">
+        <h2>Active Services</h2>
+        <div id="services">Loading...</div>
+    </div>
+
+    <script>
+        async function load() {
+            try {
+                const health = await fetch('/health').then(r => r.json());
+                document.getElementById('health').innerHTML = `
+                    Status: <span class="status ${health.status}">${health.status.toUpperCase()}</span><br>
+                    Uptime: ${health.uptime_seconds.toFixed(0)}s
+                `;
+
+                const services = await fetch('/services').then(r => r.json());
+                document.getElementById('services').innerHTML = services.services.map(s => `
+                    <div><strong>${s.id}</strong>: ${s.description || 'No description'}</div>
+                `).join('');
+            } catch (err) {
+                document.getElementById('health').innerText = "Failed to connect to Kernel";
+            }
+        }
+        setInterval(load, 2000);
+        load();
+    </script>
+</body>
+</html>
