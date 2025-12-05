@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Adapter Report Generator",
+  "description": "Scans the adapters/ folder and creates a markdown file at .kiro/hooks/adapter-report.md listing all available adapters",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Scan the adapters/ directory and generate a comprehensive markdown report at .kiro/hooks/adapter-report.md. The report should list all adapters found in the adapters/ folder, including their names and any relevant details you can extract from their structure. Format it as a clean, organized markdown document with sections for each adapter."
+  }
+}
